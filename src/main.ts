@@ -54,7 +54,6 @@ app.whenReady().then(() => {
   mainWindow.loadFile("index.html");
 });
 
-
 ipcMain.handle("select-image", async () => {
   const result = await dialog.showOpenDialog({
     properties: ["openFile"],
@@ -64,89 +63,110 @@ ipcMain.handle("select-image", async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
-ipcMain.on("generate-images", async (event, { 
-  imagePath, textList, fontFamily, fontSize, textColor, shadowColor, isBold, isItalic, isUnderline, padding 
-}) => {
-  if (!imagePath || textList.length === 0) {
+ipcMain.on(
+  "generate-images",
+  async (event, { imagePath, textList, fontFamily, fontSize, textColor, shadowColor, isBold, isItalic, isUnderline, padding, textAlign, textPosition }) => {
+    if (!imagePath || textList.length === 0) {
       event.reply("generate-images-result", { success: false, message: "Missing input" });
       return;
-  }
+    }
 
-  const outputDir = path.join(__dirname, "output");
-  if (!fs.existsSync(outputDir)) {
+    const outputDir = path.join(__dirname, "output");
+    if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir);
-  }
+    }
 
-  try {
+    try {
       const image = await loadImage(imagePath);
       const width = image.width;
       const height = image.height;
       const lineHeight = fontSize * 1.2;
 
       for (let i = 0; i < textList.length; i++) {
-          const canvas = createCanvas(width, height);
-          const ctx = canvas.getContext("2d");
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext("2d");
 
-          ctx.drawImage(image, 0, 0, width, height);
-          ctx.textAlign = "center";
+        ctx.drawImage(image, 0, 0, width, height);
 
-          // Apply custom font styles
-          let fontStyle = "";
-          if (isBold) fontStyle += "bold ";
-          if (isItalic) fontStyle += "italic ";
+        // Set text alignment
+        ctx.textAlign = textAlign as CanvasTextAlign;
 
-          ctx.font = `${fontStyle} ${fontSize}px '${fontFamily}', sans-serif`;
+        // Determine font style
+        let fontStyle = "";
+        if (isBold && isItalic) {
+          fontStyle = "bold italic";
+        } else if (isBold) {
+          fontStyle = "bold";
+        } else if (isItalic) {
+          fontStyle = "italic";
+        }
 
-          const maxTextWidth = width - 2 * padding;
-          const words = textList[i].split(" ");
-          let lines: string[] = [];
-          let currentLine = "";
+        ctx.font = `${fontStyle} ${fontSize}px '${fontFamily}'`;
 
-          words.forEach((word: any) => {
-              let testLine = currentLine + (currentLine ? " " : "") + word;
-              let testWidth = ctx.measureText(testLine).width;
-              if (testWidth > maxTextWidth) {
-                  lines.push(currentLine);
-                  currentLine = word;
-              } else {
-                  currentLine = testLine;
-              }
-          });
+        // Determine max width for text
+        const maxTextWidth = width - 2 * padding;
+        const words = textList[i].split(" ");
+        let lines: string[] = [];
+        let currentLine = "";
 
-          lines.push(currentLine);
-          const totalTextHeight = lines.length * lineHeight;
-          let textY = (height - totalTextHeight) / 2;
-          const textX = width / 2;
+        words.forEach((word: any) => {
+          let testLine = currentLine + (currentLine ? " " : "") + word;
+          let testWidth = ctx.measureText(testLine).width;
+          if (testWidth > maxTextWidth) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
 
-          lines.forEach(line => {
-              ctx.lineWidth = 6;
-              ctx.strokeStyle = "black";
-              ctx.strokeText(line, textX, textY);
+        lines.push(currentLine);
+        const totalTextHeight = lines.length * lineHeight;
 
-              ctx.shadowColor = shadowColor;
-              ctx.shadowOffsetX = 3;
-              ctx.shadowOffsetY = 3;
-              ctx.shadowBlur = 5;
+        // Set text position
+        let textY = 0;
+        if (textPosition === "top") {
+          textY = padding;
+        } else if (textPosition === "center") {
+          textY = (height - totalTextHeight) / 2;
+        } else if (textPosition === "bottom") {
+          textY = height - totalTextHeight - padding;
+        }
 
-              ctx.fillStyle = textColor;
-              ctx.fillText(line, textX, textY);
+        let textX = width / 2;
+        if (textAlign === "left") textX = padding;
+        if (textAlign === "right") textX = width - padding;
 
-              // Apply underline
-              if (isUnderline) {
-                  const textWidth = ctx.measureText(line).width;
-                  ctx.fillRect(textX - textWidth / 2, textY + 5, textWidth, 3);
-              }
+        lines.forEach((line) => {
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = "black";
+          ctx.strokeText(line, textX, textY);
 
-              textY += lineHeight;
-          });
+          ctx.shadowColor = shadowColor;
+          ctx.shadowOffsetX = 3;
+          ctx.shadowOffsetY = 3;
+          ctx.shadowBlur = 5;
 
-          const outputFile = path.join(outputDir, `output_${i + 1}.png`);
-          const buffer = canvas.toBuffer("image/png");
-          fs.writeFileSync(outputFile, buffer);
+          ctx.fillStyle = textColor;
+          ctx.fillText(line, textX, textY);
+
+          // Apply underline
+          if (isUnderline) {
+            const textWidth = ctx.measureText(line).width;
+            ctx.fillRect(textX - textWidth / 2, textY + 5, textWidth, 3);
+          }
+
+          textY += lineHeight;
+        });
+
+        const outputFile = path.join(outputDir, `output_${i + 1}.png`);
+        const buffer = canvas.toBuffer("image/png");
+        fs.writeFileSync(outputFile, buffer);
       }
 
       event.reply("generate-images-result", { success: true, outputDir });
-  } catch (error: any) {
+    } catch (error: any) {
       event.reply("generate-images-result", { success: false, message: error.message });
+    }
   }
-});
+);
