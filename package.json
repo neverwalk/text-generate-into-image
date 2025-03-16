@@ -1,9 +1,9 @@
 {
   "main": "dist/main.js",
   "scripts": {
-    "build": "npx tsc && npm run build-css",
-    "build-css": "sass src/assets/style.scss dist/assets/style.css",
-    "watch-css": "sass --watch src/assets/style.scss:dist/assets/style.css",
+    "build": "npx tsc && npm run copy-fonts && npm run build-css",
+    "copy-fonts": "mkdir -p dist/assets/fonts && cp -r src/assets/fonts/* dist/assets/fonts/",
+    "build-css": "sass src/assets/css/style.scss dist/assets/css/style.css",
     "start": "npm run build && electron ."
   },
   "dependencies": {
