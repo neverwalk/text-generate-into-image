@@ -2,12 +2,12 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "npx tsc && npm run copy-fonts && npm run build-css",
-    "copy-fonts": "mkdir -p dist/assets/fonts && cp -r src/assets/fonts/* dist/assets/fonts/",
+    "copy-fonts": "cpx \"src/assets/fonts/**/*\" \"dist/assets/fonts/\"",
     "build-css": "sass src/assets/css/style.scss dist/assets/css/style.css",
     "start": "npm run build && electron ."
   },
   "dependencies": {
-    "canvas": "^3.1.0",
+    "@napi-rs/canvas": "^0.1.68",
     "electron": "^35.0.1",
     "electron-squirrel-startup": "^1.0.1",
     "sharp": "^0.33.5"
@@ -15,6 +15,7 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.7.0",
     "@types/node": "^22.13.10",
+    "cpx": "^1.5.0",
     "sass": "^1.85.1",
     "typescript": "^5.8.2"
   }

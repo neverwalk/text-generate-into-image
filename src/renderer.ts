@@ -27,6 +27,8 @@ document.getElementById("generate")?.addEventListener("click", () => {
   const isBold = (document.getElementById("bold-option") as HTMLInputElement).checked;
   const isItalic = (document.getElementById("italic-option") as HTMLInputElement).checked;
   const isUnderline = (document.getElementById("underline-option") as HTMLInputElement).checked;
+  const enableShadow = (document.getElementById("shadow-option") as HTMLInputElement).checked;
+  const enableStroke = (document.getElementById("stroke-option") as HTMLInputElement).checked;
 
   const textAlign = (document.getElementById("text-align") as HTMLSelectElement).value;
   const textPosition = (document.getElementById("text-position") as HTMLSelectElement).value;
@@ -38,6 +40,8 @@ document.getElementById("generate")?.addEventListener("click", () => {
     fontSize,
     textColor,
     shadowColor,
+    enableShadow,
+    enableStroke,
     isBold,
     isItalic,
     isUnderline,
